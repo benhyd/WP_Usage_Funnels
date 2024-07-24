@@ -1,0 +1,100 @@
+SELECT *
+FROM survey
+LIMIT 10;
+
+SELECT question, COUNT(DISTINCT user_id)
+FROM survey
+GROUP BY question;
+
+/*
+Question 1 is 100%, question 2 is 95%, question 3 is 80%, question 4 is 95%, and question 5 is 75%.
+I think the reasons questions 3 and 5 have lower completion rates are because customers may not know what shapes they prefer without trying them on and customers
+might not know the last time they had an eye exam or embarassed by how long its been since their last exam.*/
+
+SELECT *
+FROM quiz
+LIMIT 5;
+
+SELECT *
+FROM home_try_on
+LIMIT 5;
+
+SELECT *
+FROM purchase
+LIMIT 5;
+
+--Temporary table that left joins user_id with columns that tell whether or not the customer did in home try on, how many pairs they ordered, and whether or not they made a purchase
+WITH funnels AS(
+  SELECT q.user_id,
+  CASE
+  WHEN h.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_home_try_on',
+  h.number_of_pairs,
+  CASE
+  WHEN p.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_purchase'
+  FROM quiz q
+  LEFT JOIN home_try_on h
+    ON q.user_id = h.user_id
+  LEFT JOIN purchase p
+    ON h.user_id = p.user_id
+  )
+
+--Number of users that did home try on
+SELECT DISTINCT is_home_try_on, COUNT(is_home_try_on) AS 'count_home_try_on'
+FROM funnels
+GROUP BY is_home_try_on;
+
+WITH funnels AS(
+  SELECT q.user_id,
+  CASE
+  WHEN h.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_home_try_on',
+  h.number_of_pairs,
+  CASE
+  WHEN p.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_purchase'
+  FROM quiz q
+  LEFT JOIN home_try_on h
+    ON q.user_id = h.user_id
+  LEFT JOIN purchase p
+    ON h.user_id = p.user_id
+  )
+
+--Number of users that chose 3 pairs vs 5 pairs to try on
+SELECT DISTINCT number_of_pairs, COUNT(number_of_pairs) AS 'count_number_of_pairs'
+FROM funnels
+WHERE number_of_pairs IS NOT NULL
+GROUP BY number_of_pairs;
+
+WITH funnels AS(
+  SELECT q.user_id,
+  CASE
+  WHEN h.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_home_try_on',
+  h.number_of_pairs,
+  CASE
+  WHEN p.user_id IS NOT NULL = 1 THEN 'True'
+  ELSE 'False'
+  END AS 'is_purchase'
+  FROM quiz q
+  LEFT JOIN home_try_on h
+    ON q.user_id = h.user_id
+  LEFT JOIN purchase p
+    ON h.user_id = p.user_id
+  )
+
+--Number of customers that made a purchase, grouped by number of pairs
+SELECT number_of_pairs, COUNT(is_purchase)
+FROM funnels
+WHERE is_purchase = 1
+GROUP BY number_of_pairs;
+--With the data combined into one table, using the left join, it is possible to see the churn rate of the funnel and users’ decisions.
+The first query shows that 75% of the initial 1,000 users chose to do a home try on. Of those , users were split roughly 50/50 between choosing 3 and 5 pairs.
+Of the users that chose 3 pairs, 53% ended up making a purchase, and of the users that chose 5 pairs, 79% made a purchase.
+This data strongly suggests that letting customers choose 5 pairs of glasses to try on at home leads to more purchases.
